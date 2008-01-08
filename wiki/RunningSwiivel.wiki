@@ -1,0 +1,15 @@
+#summary How to setup and run the game
+
+= Introduction =
+
+This page should contain a step-by-step guide for installing and running swiivel.
+
+= Details =
+
+Requirements:
+ * python-pygame
+ * python-bluez
+ * N wiimotes.  Currently N should be less than 5.  If N=0, you can only play one player (with keyboard and mouse).
+ * ceil(N/4) bluetooth dongles.
+
+ 
