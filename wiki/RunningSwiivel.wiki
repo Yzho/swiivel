@@ -11,5 +11,9 @@ Requirements:
  * python-bluez
  * N wiimotes.  Currently N should be less than 5.  If N=0, you can only play one player (with keyboard and mouse).
  * ceil(N/4) bluetooth dongles.
+ * subversion
 
- 
+Steps:
+ * svn checkout http://swiivel.googlecode.com/svn/trunk/ swiivel-read-only
+ * cd swiivel-read-only
+ * ./swiivel.py
