@@ -372,6 +372,11 @@ def player_loop(player):
         player.hDirection = keystate[K_RIGHT] - keystate[K_LEFT]
         player.vDirection = keystate[K_DOWN] - keystate[K_UP]
         player.firing = keystate[K_SPACE]
+        if (player.firing and
+            not player.groups()):
+            # respawn
+            players[0] = player = Player();
+
         #cap the framerate
         #pygame.time.Clock().tick(40);
         time.sleep(0.025);
