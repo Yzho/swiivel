@@ -32,8 +32,8 @@ MAX_SHOTS      = 5      #most player bullets onscreen
 ALIEN_ODDS     = 120     #chances a new alien appears
 BOMB_ODDS      = 60    #chances a new bomb will drop
 ALIEN_RELOAD   = 12     #frames between new aliens
-WIDTH          = 1900;
-HEIGHT         = 1000;
+WIDTH          = 800;
+HEIGHT         = 400;
 SCREENRECT     = Rect(0, 0, WIDTH, HEIGHT)
 SCORE          = 0
 
@@ -41,10 +41,6 @@ event_dispatcher = None;
 
 players = {};
 connected_wiimotes = {};
-known_wiimotes = ["00:17:AB:33:2D:97",
-                  "00:1A:E9:3E:3D:66",
-                  "00:17:AB:33:5F:05",
-                  "00:19:1D:30:D9:EA"];
 
 def load_image(file):
     "loads an image, prepares it for play"
@@ -345,13 +341,13 @@ def wiimote_loop(ev, cf):
     ev.subscribe(WM_BT, ev_wm_bt);
 
     while(True):
-        time.sleep(2);
-        btaddr = "";
-        for addr in known_wiimotes:
-            if ((not addr in connected_wiimotes) or
-                (not connected_wiimotes[addr].running)):
-                 btaddr = addr;
-                 break;
+	btaddr = sys.stdin.readline().rstrip();
+	if (not btaddr):
+            for addr in cf['KNOWN_WIIMOTES']:
+                if ((not addr in connected_wiimotes) or
+                    (not connected_wiimotes[addr].running)):
+                     btaddr = addr;
+                     break;
              
         if (btaddr):
           print "Connecting to " + btaddr;

@@ -10,6 +10,11 @@ CFG = {  # !!!!
 ## This is sensitive to syntax, so be careful with the punctuation
 ##
 ##
+'KNOWN_WIIMOTES': ["00:17:AB:33:2D:97",
+                   "00:1A:E9:3E:3D:66",
+                   "00:17:AB:33:5F:05",
+                   "00:19:1D:30:D9:EA"],
+
 'MY_WIIMOTE_ADDR': "",
 #'MY_WIIMOTE_ADDR': "00:17:AB:29:4E:FE",
 #'MY_WIIMOTE_ADDR': "00:17:AB:33:2D:97",
