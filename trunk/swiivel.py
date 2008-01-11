@@ -134,6 +134,7 @@ class Player(pygame.sprite.Sprite):
         return [dx / mag, dy / mag]
 
     def bounce(self, rect):
+        pass
         #TODO: pickup
 
 class Block(pygame.sprite.Sprite):
