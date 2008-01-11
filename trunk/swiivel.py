@@ -212,7 +212,7 @@ class Shot(pygame.sprite.Sprite):
             if (h_overlap <= v_overlap):
                 self.direction[0] = -self.direction[0]
         else:
-            kill()
+            self.kill()
             
 class Bomb(pygame.sprite.Sprite):
     speed = 9
