@@ -30,7 +30,7 @@ if not pygame.image.get_extended():
 #game constants
 MAX_SHOTS      = 5      #most player bullets onscreen
 ALIEN_ODDS     = 120     #chances a new alien appears
-BOMB_ODDS      = 60    #chances a new bomb will drop
+BOMB_ODDS      = 10    #chances a new bomb will drop
 ALIEN_RELOAD   = 12     #frames between new aliens
 WIDTH          = 800;
 HEIGHT         = 400;
@@ -317,6 +317,12 @@ def main(winstyle = 0):
         if not int(random.random() * ALIEN_ODDS):
             Alien()
 
+        shotcols = pygame.sprite.groupcollide(shots, shots, 0, 0);
+        for shot in shotcols.keys():
+            if (len(shotcols[shot]) > 1):
+                for shot2 in shotcols[shot]:
+                    shot2.kill();
+        
         for tank in pygame.sprite.groupcollide(shots, tanks, 1, 1).keys():
             boom_sound.play()
             Explosion(tank)
