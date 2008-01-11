@@ -17,6 +17,7 @@ from wmd.Wiimote.WMManager import WMManager
 
 from wmd.Wiimote.Input import ReportParser, WiimoteState
 
+from Maps import map1
 
 #import basic pygame modules
 import pygame
@@ -29,7 +30,7 @@ if not pygame.image.get_extended():
 
 #game constants
 MAX_SHOTS      = 5      #most player bullets onscreen
-ALIEN_ODDS     = 120     #chances a new alien appears
+ALIEN_ODDS     = 12000     #chances a new alien appears
 BOMB_ODDS      = 10    #chances a new bomb will drop
 ALIEN_RELOAD   = 12     #frames between new aliens
 WIDTH          = 800;
@@ -88,6 +89,8 @@ class Player(pygame.sprite.Sprite):
     gun_offset = -11
     images = []
     shoot_sound = load_sound('car_door.wav')
+    shot_speed = 11;
+    shot_bounces = 2;
     
     def __init__(self):
         pygame.sprite.Sprite.__init__(self, self.containers)
@@ -111,7 +114,8 @@ class Player(pygame.sprite.Sprite):
         #self.rect.top = self.origtop - (self.rect.left/self.bounce%2)
 
         if self.firing and not self.reloading and len(self.shots) < MAX_SHOTS:
-            self.shots.add(Shot(self.gunpos(), self.turret_vector()));
+            self.shots.add(Shot(self.gunpos(), self.turret_vector(),
+                                self.shot_speed, self.shot_bounces));
             self.shoot_sound.play()
         self.reloading = self.firing
 
@@ -129,6 +133,15 @@ class Player(pygame.sprite.Sprite):
 	if (mag == 0) : return [0, 0]
         return [dx / mag, dy / mag]
 
+    def bounce(self, rect):
+        #TODO: pickup
+
+class Block(pygame.sprite.Sprite):
+    def __init__(self, coords):
+        pygame.sprite.Sprite.__init__(self, self.containers)
+        self.image = pygame.Surface([int(coords[2]* WIDTH/20.0), int(coords[3]* HEIGHT/20.0)]);
+        self.rect = self.image.fill(0x00aabbcc).move(
+            int(coords[0] * WIDTH/20.0), int(coords[1] * HEIGHT/20.0));
 
 class Alien(pygame.sprite.Sprite):
     speed = 5
@@ -174,20 +187,32 @@ class Explosion(pygame.sprite.Sprite):
 
 
 class Shot(pygame.sprite.Sprite):
-    speed = 11
     images = []
-    def __init__(self, pos, direction):
+    def __init__(self, pos, direction, speed, bounces):
         pygame.sprite.Sprite.__init__(self, self.containers)
+        self.speed = speed
         self.image = self.images[0]
         self.rect = self.image.get_rect(midbottom=pos)
  	self.direction = direction
+        self.bounces = bounces;
 
     def update(self):
         self.rect.move_ip(self.speed * self.direction[0], self.speed * self.direction[1])
         if (not SCREENRECT.contains(self.rect)):
             self.kill()
 
-
+    def bounce(self, rect):
+        if (self.bounces > 0):
+            self.bounces -= 1
+            h_overlap = (self.rect.right - rect.left, rect.right - self.rect.left)[self.direction[0] < 0]
+            v_overlap = (self.rect.bottom - rect.top, rect.bottom - self.rect.top)[self.direction[1] < 0]
+            if (h_overlap >= v_overlap):
+                self.direction[1] = -self.direction[1]
+            if (h_overlap <= v_overlap):
+                self.direction[0] = -self.direction[0]
+        else:
+            kill()
+            
 class Bomb(pygame.sprite.Sprite):
     speed = 9
     images = []
@@ -196,7 +221,8 @@ class Bomb(pygame.sprite.Sprite):
         self.image = self.images[0]
         self.rect = self.image.get_rect(midbottom=
                     alien.rect.move(0,50).midbottom)
-
+        self.bounces = 0;
+        
     def update(self):
         self.rect.move_ip(0, self.speed)
         if self.rect.bottom >= 470:
@@ -241,7 +267,7 @@ def main(winstyle = 0):
     Alien.images = load_images('alien1.gif', 'alien2.gif', 'alien3.gif')
     Bomb.images = [load_image('bomb.gif')]
     Shot.images = [load_image('shot.gif')]
-
+    
     #decorate the game window
     icon = pygame.transform.scale(Alien.images[0], (32, 32))
     pygame.display.set_icon(icon)
@@ -266,22 +292,28 @@ def main(winstyle = 0):
     # Initialize Game Groups
     tanks = pygame.sprite.Group()
     shots = pygame.sprite.Group()
+    blocks = pygame.sprite.Group()
+    bouncers = pygame.sprite.Group()
     all = pygame.sprite.RenderUpdates()
 
     #assign default groups to each sprite class
-    Player.containers = tanks, all
+    Player.containers = tanks, bouncers, all
     Alien.containers = tanks, all
-    Shot.containers = shots, all
+    Shot.containers = shots, bouncers, all
     Bomb.containers = shots, all
+    Block.containers = blocks, all
     Explosion.containers = all
     #Score.containers = all
+
+    # make blocks from map
+    for coords in map1['blocks']:
+        Block(coords)
 
     #Create Some Starting Values
     global score
     kills = 0
     # clock = pygame.time.Clock()
     # NB: it seems that clock.tick does not let other threads run?
-
     #initialize our starting sprites
     global SCORE
 
@@ -322,6 +354,12 @@ def main(winstyle = 0):
             if (len(shotcols[shot]) > 1):
                 for shot2 in shotcols[shot]:
                     shot2.kill();
+
+        bounces = pygame.sprite.groupcollide(bouncers, blocks, 0, 0);
+        for shot in bounces.keys():
+            for block in bounces[shot]:
+                shot.bounce(block.rect);
+                    
         
         for tank in pygame.sprite.groupcollide(shots, tanks, 1, 1).keys():
             boom_sound.play()
