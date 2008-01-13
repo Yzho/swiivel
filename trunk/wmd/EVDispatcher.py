@@ -1,5 +1,5 @@
-from wmd.EventBridges.PyXlib import EventBridge_PyXlib
-from wmd.EventBridges.uinput import EventBridge_uinput
+#from wmd.EventBridges.PyXlib import EventBridge_PyXlib
+#from wmd.EventBridges.uinput import EventBridge_uinput
 from wmd.Common import *
 
 class EVDispatcher:
@@ -15,11 +15,11 @@ class EVDispatcher:
 
   def __init__( self, cf ):
     self.cf = cf
-    if self.cf['IO_MODES']['XLIB']:
-      self.xlib = EventBridge_PyXlib( self, cf )
+#    if self.cf['IO_MODES']['XLIB']:
+#      self.xlib = EventBridge_PyXlib( self, cf )
 
-    if self.cf['IO_MODES']['UINPUT']:
-      self.uinput = EventBridge_uinput( self, cf )
+#    if self.cf['IO_MODES']['UINPUT']:
+#      self.uinput = EventBridge_uinput( self, cf )
 
   # Always sends to "0" subscribers; conditionally also to id subscribers.
   def send( self, evtype, payload, id=0 ):
