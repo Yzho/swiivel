@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+#
 
 import math
 import os.path;
@@ -127,10 +128,10 @@ class Player(pygame.sprite.Sprite):
         return pygame.draw.aaline(surface, [255,0,0], self.gunpos(), self.cursor)
 
     def turret_vector(self):
-	dx = self.cursor[0] - self.gunpos()[0];
-	dy = self.cursor[1] - self.gunpos()[1];
-	mag = math.sqrt(dx*dx + dy*dy)
-	if (mag == 0) : return [0, 0]
+        dx = self.cursor[0] - self.gunpos()[0];
+        dy = self.cursor[1] - self.gunpos()[1];
+        mag = math.sqrt(dx*dx + dy*dy)
+        if (mag == 0) : return [0, 0]
         return [dx / mag, dy / mag]
 
     def bounce(self, rect):
@@ -194,7 +195,7 @@ class Shot(pygame.sprite.Sprite):
         self.speed = speed
         self.image = self.images[0]
         self.rect = self.image.get_rect(midbottom=pos)
- 	self.direction = direction
+        self.direction = direction
         self.bounces = bounces;
 
     def update(self):
@@ -340,7 +341,7 @@ def main(winstyle = 0):
 
         # clear/erase the last drawn sprites
         #all.clear(screen, background)
-	screen.blit(background, (0,0))
+        screen.blit(background, (0,0))
 
         #update all the sprites
         all.update()
@@ -372,7 +373,7 @@ def main(winstyle = 0):
         for tank in tanks:
             dirty.append(tank.drawcursor(screen));
         pygame.display.update(SCREENRECT)
-	
+        
         #cap the framerate
         #clock.tick(40)
         time.sleep(0.025);
@@ -386,8 +387,8 @@ def wiimote_loop(ev, cf):
     ev.subscribe(WM_BT, ev_wm_bt);
 
     while(True):
-	btaddr = sys.stdin.readline().rstrip();
-	if (not btaddr):
+        btaddr = sys.stdin.readline().rstrip();
+        if (not btaddr):
             for addr in cf['KNOWN_WIIMOTES']:
                 if ((not addr in connected_wiimotes) or
                     (not connected_wiimotes[addr].running)):
