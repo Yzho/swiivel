@@ -106,13 +106,16 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         if self.hDirection: self.facing = self.hDirection
-        self.rect.move_ip(self.hDirection*self.speed, self.vDirection*self.speed)
+        dx = self.hDirection*self.speed;
+        dy = self.vDirection*self.speed;
+        self.rect.move_ip(dx, 0);
+        if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+            self.rect.move_ip(-dx, 0);
+        self.rect.move_ip(0,dy);
+        if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+            self.rect.move_ip(0, -dy);
+        
         self.rect = self.rect.clamp(SCREENRECT)
-        if self.hDirection < 0:
-            self.image = self.images[0]
-        elif self.hDirection > 0:
-            self.image = self.images[1]
-        #self.rect.top = self.origtop - (self.rect.left/self.bounce%2)
 
         if self.firing and not self.reloading and len(self.shots) < MAX_SHOTS:
             self.shots.add(Shot(self.gunpos(), self.turret_vector(),
@@ -207,7 +210,21 @@ class Shot(pygame.sprite.Sprite):
         self.firer = firer;
         self.when_fired = time.time();
     def update(self):
-        self.rect.move_ip(self.speed * self.direction[0], self.speed * self.direction[1])
+        bouncing = False
+        self.rect.move_ip(self.speed * self.direction[0], 0);
+        if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+            self.direction[0] *= -1;
+            self.rect.move_ip(self.speed * self.direction[0], 0);
+            bouncing = True;
+        self.rect.move_ip(0, self.speed * self.direction[1]);
+        if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+            self.direction[1] *= -1;
+            self.rect.move_ip(0, self.speed * self.direction[1]);
+            bouncing = True;
+        if (bouncing):
+            self.bounces -= 1;
+            if self.bounces == 0:
+                self.kill()
         if (not SCREENRECT.contains(self.rect)):
             self.kill()
 
@@ -316,13 +333,13 @@ def main(winstyle = 0):
     tanks = pygame.sprite.Group()
     shots = pygame.sprite.Group()
     blocks = pygame.sprite.Group()
-    bouncers = pygame.sprite.Group()
     all = pygame.sprite.RenderUpdates()
+    Player.blocks = Shot.blocks = blocks
 
     #assign default groups to each sprite class
-    Player.containers = tanks, bouncers, all
+    Player.containers = tanks, all
     Alien.containers = tanks, all
-    Shot.containers = shots, bouncers, all
+    Shot.containers = shots, all
     Bomb.containers = shots, all
     Block.containers = blocks, all
     Explosion.containers = all
@@ -378,12 +395,6 @@ def main(winstyle = 0):
                 for shot2 in shotcols[shot]:
                     shot2.kill();
 
-        bounces = pygame.sprite.groupcollide(bouncers, blocks, 0, 0);
-        for shot in bounces.keys():
-            for block in bounces[shot]:
-                shot.bounce(block.rect);
-                    
-        
         frags = pygame.sprite.groupcollide(shots, tanks, 0, 0);
         for shot in frags.keys():
              for fragged in frags[shot]:
