@@ -116,20 +116,22 @@ class Player(pygame.sprite.Sprite):
 
         if self.firing and not self.reloading and len(self.shots) < MAX_SHOTS:
             self.shots.add(Shot(self.gunpos(), self.turret_vector(),
-                                self.shot_speed, self.shot_bounces));
+                                self.shot_speed, self.shot_bounces, self));
             self.shoot_sound.play()
         self.reloading = self.firing
 
     def gunpos(self):
-        pos = self.facing*self.gun_offset + self.rect.centerx
-        return pos, self.rect.top
+        turret_length = 10;
+        vect = self.turret_vector()
+        return (self.rect.centerx + turret_length * vect[0],
+                self.rect.centery + turret_length * vect[1]);
 
     def drawcursor(self, surface):
         return pygame.draw.aaline(surface, [255,0,0], self.gunpos(), self.cursor)
 
     def turret_vector(self):
-        dx = self.cursor[0] - self.gunpos()[0];
-        dy = self.cursor[1] - self.gunpos()[1];
+        dx = self.cursor[0] - self.rect.centerx;
+        dy = self.cursor[1] - self.rect.centery;
         mag = math.sqrt(dx*dx + dy*dy)
         if (mag == 0) : return [0, 0]
         return [dx / mag, dy / mag]
@@ -167,7 +169,11 @@ class Alien(pygame.sprite.Sprite):
         self.frame = self.frame + 1
         self.image = self.images[self.frame/self.animcycle%3]
         if not int(random.random() * BOMB_ODDS):
-            Bomb(self)
+            Shot((self.rect.centerx, self.rect.y + 50),
+                 (0, 1),
+                 9,
+                 0,
+                 self);
 
     def drawcursor(self, surface):
         pass
@@ -190,14 +196,16 @@ class Explosion(pygame.sprite.Sprite):
 
 class Shot(pygame.sprite.Sprite):
     images = []
-    def __init__(self, pos, direction, speed, bounces):
+    immunity_secs = .2
+    def __init__(self, pos, direction, speed, bounces, firer):
         pygame.sprite.Sprite.__init__(self, self.containers)
         self.speed = speed
         self.image = self.images[0]
         self.rect = self.image.get_rect(midbottom=pos)
         self.direction = direction
         self.bounces = bounces;
-
+        self.firer = firer;
+        self.when_fired = time.time();
     def update(self):
         self.rect.move_ip(self.speed * self.direction[0], self.speed * self.direction[1])
         if (not SCREENRECT.contains(self.rect)):
@@ -214,6 +222,18 @@ class Shot(pygame.sprite.Sprite):
                 self.direction[0] = -self.direction[0]
         else:
             self.kill()
+            
+    def frag(self, tank):
+        if ((self.firer == tank) and
+            (time.time() - self.when_fired <= self.immunity_secs)):
+            pass         #stupid python
+        else: 
+            Shot.boom_sound.play()
+            Explosion(tank)
+            tank.kill()
+            self.kill()
+            #todo: scorekeeping
+
             
 class Bomb(pygame.sprite.Sprite):
     speed = 9
@@ -285,7 +305,8 @@ def main(winstyle = 0):
     pygame.display.flip()
 
     #load the sound effects
-    boom_sound = load_sound('boom.wav')
+    Shot.boom_sound = load_sound('boom.wav')
+
     if pygame.mixer:
         music = os.path.join('data', 'house_lo.wav')
         pygame.mixer.music.load(music)
@@ -363,10 +384,10 @@ def main(winstyle = 0):
                 shot.bounce(block.rect);
                     
         
-        for tank in pygame.sprite.groupcollide(shots, tanks, 1, 1).keys():
-            boom_sound.play()
-            Explosion(tank)
-            tank.kill()
+        frags = pygame.sprite.groupcollide(shots, tanks, 0, 0);
+        for shot in frags.keys():
+             for fragged in frags[shot]:
+                 shot.frag(fragged);
 
         #draw the scene
         dirty = all.draw(screen);
