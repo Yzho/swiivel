@@ -38,6 +38,7 @@ WIDTH          = 800;
 HEIGHT         = 400;
 SCREENRECT     = Rect(0, 0, WIDTH, HEIGHT)
 SCORE          = 0
+START_NUMBER   = 0
 
 event_dispatcher = None;
 
@@ -93,10 +94,10 @@ class Player(pygame.sprite.Sprite):
     shot_speed = 11;
     shot_bounces = 2;
     
-    def __init__(self):
+    def __init__(self, position):
         pygame.sprite.Sprite.__init__(self, self.containers)
         self.image = self.images[0]
-        self.rect = self.image.get_rect(midbottom=SCREENRECT.midbottom)
+        self.rect = self.image.get_rect(left=position[0], top=position[1])
         self.reloading = 0
         self.origtop = self.rect.top
         self.facing = -1
@@ -106,21 +107,21 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         if self.hDirection: self.facing = self.hDirection
-        dx = self.hDirection*self.speed;
-        dy = self.vDirection*self.speed;
-        self.rect.move_ip(dx, 0);
-        if (pygame.sprite.spritecollide(self, self.blocks, 0)):
-            self.rect.move_ip(-dx, 0);
-        self.rect.move_ip(0,dy);
-        if (pygame.sprite.spritecollide(self, self.blocks, 0)):
-            self.rect.move_ip(0, -dy);
-        
-        self.rect = self.rect.clamp(SCREENRECT)
-
         if self.firing and not self.reloading and len(self.shots) < MAX_SHOTS:
             self.shots.add(Shot(self.gunpos(), self.turret_vector(),
                                 self.shot_speed, self.shot_bounces, self));
             self.shoot_sound.play()
+        elif not self.reloading:
+            dx = self.hDirection*self.speed;
+            dy = self.vDirection*self.speed;
+            self.rect.move_ip(dx, 0);
+            if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+                self.rect.move_ip(-dx, 0);
+            self.rect.move_ip(0,dy);
+            if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+                self.rect.move_ip(0, -dy);
+            self.rect = self.rect.clamp(SCREENRECT)
+        
         self.reloading = self.firing
 
     def gunpos(self):
@@ -356,13 +357,13 @@ def main(winstyle = 0):
     # NB: it seems that clock.tick does not let other threads run?
     #initialize our starting sprites
     global SCORE
-
+    
 
     #if pygame.font:
         #all.add(Score())
 
     # local (non-wiimote) player thread
-    p = Player();
+    p = Player(next_start());
     players[0] = p;
     thread.start_new_thread(player_loop, (p,));
 
@@ -436,7 +437,7 @@ def wiimote_loop(ev, cf):
           try:
               if wm.connect() and wm.setup():
                   thread.start_new_thread(wm.main_loop, ())
-                  players[wm.id] = Player();
+                  players[wm.id] = Player(next_start());
                   connected_wiimotes[btaddr] = wm; 
           except Exception, reason:
               # continue the thread
@@ -453,7 +454,7 @@ def player_loop(player):
         if (player.firing and
             not player.groups()):
             # respawn
-            players[0] = player = Player();
+            players[0] = player = Player(next_start());
 
         #cap the framerate
         #pygame.time.Clock().tick(40);
@@ -494,8 +495,16 @@ def ev_wm_bt(event, id):
             pass #todo: mines
     if (not p.groups() and event[0] == 'A' and event[1] == 'UP'):
         # respawn
-        players[id] = Player();        
+        players[id] = Player(next_start());
 
+def next_start():
+    global START_NUMBER
+    START_NUMBER += 1
+    list = map1['starts'];
+    coords = list[START_NUMBER % len(list)];
+    return (int(coords[0] * WIDTH/20.0), int(coords[1] * HEIGHT/20.0));
+
+        
 #call the "main" function if running this script
 if __name__ == '__main__':
     # kick off the thread to search for wiimotes
