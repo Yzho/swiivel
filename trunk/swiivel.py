@@ -140,10 +140,6 @@ class Player(pygame.sprite.Sprite):
         if (mag == 0) : return [0, 0]
         return [dx / mag, dy / mag]
 
-    def bounce(self, rect):
-        pass
-        #TODO: pickup
-
 class Block(pygame.sprite.Sprite):
     def __init__(self, coords):
         pygame.sprite.Sprite.__init__(self, self.containers)
@@ -174,7 +170,7 @@ class Alien(pygame.sprite.Sprite):
         self.image = self.images[self.frame/self.animcycle%3]
         if not int(random.random() * BOMB_ODDS):
             Shot((self.rect.centerx, self.rect.y + 50),
-                 (0, 1),
+                 [0, 1],
                  9,
                  0,
                  self);
@@ -205,7 +201,7 @@ class Shot(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self, self.containers)
         self.speed = speed
         self.image = self.images[0]
-        self.rect = self.image.get_rect(midbottom=pos)
+        self.rect = self.image.get_rect(center=pos)
         self.direction = direction
         self.bounces = bounces;
         self.firer = firer;
@@ -306,7 +302,7 @@ def main(winstyle = 0):
     Explosion.images = [img, pygame.transform.flip(img, 1, 1)]
     Alien.images = load_images('alien1.gif', 'alien2.gif', 'alien3.gif')
     Bomb.images = [load_image('bomb.gif')]
-    Shot.images = [load_image('shot.gif')]
+    Shot.images = [load_image('pellet.gif')]
     
     #decorate the game window
     icon = pygame.transform.scale(Alien.images[0], (32, 32))
@@ -315,10 +311,11 @@ def main(winstyle = 0):
     #pygame.mouse.set_visible(0)
 
     #create the background, tile the bgd image
-    bgdtile = load_image('background.gif')
+    bgdtile = load_image('wood_pole_color.png')
     background = pygame.Surface(SCREENRECT.size)
     for x in range(0, SCREENRECT.width, bgdtile.get_width()):
-        background.blit(bgdtile, (x, 0))
+        for y in range(0, SCREENRECT.height, bgdtile.get_height()):
+            background.blit(bgdtile, (x, y))
     screen.blit(background, (0,0))
     pygame.display.flip()
 
