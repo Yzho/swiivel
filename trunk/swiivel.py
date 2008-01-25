@@ -94,36 +94,58 @@ class Player(pygame.sprite.Sprite):
     shot_speed = 11;
     shot_bounces = 2;
     
-    def __init__(self, position):
+    def __init__(self, position, team):
         pygame.sprite.Sprite.__init__(self, self.containers)
-        self.image = self.images[0]
+        self.image = self.images[team][0][0]
         self.rect = self.image.get_rect(left=position[0], top=position[1])
         self.reloading = 0
         self.origtop = self.rect.top
-        self.facing = -1
         self.cursor = [0,0]
         self.shots = pygame.sprite.Group()
         self.hDirection = self.vDirection = self.firing = 0;
-
+        self.imageStep = 0;
+        self.imageSet = 0;
+        self.color = team;
+        
     def update(self):
-        if self.hDirection: self.facing = self.hDirection
+        if (self.hDirection != 0):
+            if (self.vDirection != 0):
+                if (self.vDirection == self.hDirection):
+                    newImageSet = 3
+                else:
+                    newImageSet = 1
+            else:
+                newImageSet = 2
+        elif self.vDirection != 0:
+            newImageSet = 0
+        else:
+            newImageSet = self.imageSet
+        myImages = self.images[self.color][newImageSet]
+
+        self.image = myImages[self.imageStep % len(myImages)];
+        
         if self.firing and not self.reloading and len(self.shots) < MAX_SHOTS:
             self.shots.add(Shot(self.gunpos(), self.turret_vector(),
                                 self.shot_speed, self.shot_bounces, self));
             self.shoot_sound.play()
-        elif not self.reloading:
+        elif not self.reloading and newImageSet == self.imageSet:
             dx = self.hDirection*self.speed;
             dy = self.vDirection*self.speed;
-            self.rect.move_ip(dx, 0);
-            if (pygame.sprite.spritecollide(self, self.blocks, 0)):
-                self.rect.move_ip(-dx, 0);
-            self.rect.move_ip(0,dy);
-            if (pygame.sprite.spritecollide(self, self.blocks, 0)):
-                self.rect.move_ip(0, -dy);
-            self.rect = self.rect.clamp(SCREENRECT)
-        
+            if (dx != 0 or dy != 0):
+                self.rect.move_ip(dx, 0);
+                if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+                    self.rect.move_ip(-dx, 0);
+                self.rect.move_ip(0,dy);
+                if (pygame.sprite.spritecollide(self, self.blocks, 0)):
+                    self.rect.move_ip(0, -dy);
+                self.rect = self.rect.clamp(SCREENRECT)
+                if (self.hDirection == 0):
+                    self.imageStep -= self.vDirection
+                else:
+                    self.imageStep += self.hDirection
         self.reloading = self.firing
-
+        self.imageSet = newImageSet
+        
     def gunpos(self):
         turret_length = 10;
         vect = self.turret_vector()
@@ -296,8 +318,14 @@ def main(winstyle = 0):
 
     #Load images, assign to sprite classes
     #(do this before the classes are used, after screen setup)
-    img = load_image('player1.gif')
-    Player.images = [img, pygame.transform.flip(img, 1, 0)]
+    Player.images = [];
+    for color in ("red","blue"):
+        Player.images.append([]);
+        for dir in ("n","ne","e","se"):
+            Player.images[-1].append([]);
+            for frame in (0, 1, 2):
+                Player.images[-1][-1].append(load_image('tracks-%s-%s-%d.gif' % (color, dir, frame)))
+    
     img = load_image('explosion1.gif')
     Explosion.images = [img, pygame.transform.flip(img, 1, 1)]
     Alien.images = load_images('alien1.gif', 'alien2.gif', 'alien3.gif')
@@ -360,7 +388,7 @@ def main(winstyle = 0):
         #all.add(Score())
 
     # local (non-wiimote) player thread
-    p = Player(next_start());
+    p = Player(next_start(), 0);
     players[0] = p;
     thread.start_new_thread(player_loop, (p,));
 
@@ -434,7 +462,7 @@ def wiimote_loop(ev, cf):
           try:
               if wm.connect() and wm.setup():
                   thread.start_new_thread(wm.main_loop, ())
-                  players[wm.id] = Player(next_start());
+                  players[wm.id] = Player(next_start(), wm.id % 2 );
                   connected_wiimotes[btaddr] = wm; 
           except Exception, reason:
               # continue the thread
@@ -451,7 +479,7 @@ def player_loop(player):
         if (player.firing and
             not player.groups()):
             # respawn
-            players[0] = player = Player(next_start());
+            players[0] = player = Player(next_start(), 0);
 
         #cap the framerate
         #pygame.time.Clock().tick(40);
@@ -492,7 +520,7 @@ def ev_wm_bt(event, id):
             pass #todo: mines
     if (not p.groups() and event[0] == 'A' and event[1] == 'UP'):
         # respawn
-        players[id] = Player(next_start());
+        players[id] = Player(next_start(), id % 2);
 
 def next_start():
     global START_NUMBER
