@@ -30,12 +30,14 @@ if not pygame.image.get_extended():
 
 
 #game constants
+SCALE=1.0
+#SCALE=2.4
 MAX_SHOTS      = 5      #most player bullets onscreen
 ALIEN_ODDS     = 12000     #chances a new alien appears
 BOMB_ODDS      = 10    #chances a new bomb will drop
 ALIEN_RELOAD   = 12     #frames between new aliens
-WIDTH          = 800;
-HEIGHT         = 400;
+WIDTH          = 800 * SCALE;
+HEIGHT         = 450 * SCALE;
 SCREENRECT     = Rect(0, 0, WIDTH, HEIGHT)
 SCORE          = 0
 START_NUMBER   = 0
@@ -52,6 +54,8 @@ def load_image(file):
         surface = pygame.image.load(file)
     except pygame.error:
         raise SystemExit, 'Could not load image "%s" %s'%(file, pygame.get_error())
+    surface = pygame.transform.scale(surface,
+                                     (surface.get_width() * SCALE, surface.get_height() * SCALE));
     return surface.convert()
 
 def load_images(*files):
@@ -86,12 +90,12 @@ def load_sound(file):
 
 
 class Player(pygame.sprite.Sprite):
-    speed = 5
+    speed = 5 * SCALE
     bounce = 24
     gun_offset = -11
     images = []
     shoot_sound = load_sound('car_door.wav')
-    shot_speed = 11;
+    shot_speed = 10;
     shot_bounces = 2;
     
     def __init__(self, position, team):
@@ -147,10 +151,7 @@ class Player(pygame.sprite.Sprite):
         self.imageSet = newImageSet
         
     def gunpos(self):
-        turret_length = 10;
-        vect = self.turret_vector()
-        return (self.rect.centerx + turret_length * vect[0],
-                self.rect.centery + turret_length * vect[1]);
+        return self.rect.center
 
     def drawcursor(self, surface):
         return pygame.draw.aaline(surface, [255,0,0], self.gunpos(), self.cursor)
@@ -165,12 +166,12 @@ class Player(pygame.sprite.Sprite):
 class Block(pygame.sprite.Sprite):
     def __init__(self, coords):
         pygame.sprite.Sprite.__init__(self, self.containers)
-        self.image = pygame.Surface([int(coords[2]* WIDTH/20.0), int(coords[3]* HEIGHT/20.0)]);
+        self.image = pygame.Surface([int(coords[2]* SCALE * 40), int(coords[3]* SCALE * 22.5)]);
         self.rect = self.image.fill(0x00aabbcc).move(
-            int(coords[0] * WIDTH/20.0), int(coords[1] * HEIGHT/20.0));
+            int(coords[0] * SCALE * 40), int(coords[1] * 22.5 * SCALE));
 
 class Alien(pygame.sprite.Sprite):
-    speed = 5
+    speed = 5 * SCALE
     animcycle = 12
     images = []
     def __init__(self):
@@ -221,13 +222,14 @@ class Shot(pygame.sprite.Sprite):
     immunity_secs = .2
     def __init__(self, pos, direction, speed, bounces, firer):
         pygame.sprite.Sprite.__init__(self, self.containers)
-        self.speed = speed
+        self.speed = speed * SCALE
         self.image = self.images[0]
         self.rect = self.image.get_rect(center=pos)
         self.direction = direction
         self.bounces = bounces;
         self.firer = firer;
-        self.when_fired = time.time();
+        self.cleared_firer = False;
+        self.hitting_firer = True;
     def update(self):
         bouncing = False
         self.rect.move_ip(self.speed * self.direction[0], 0);
@@ -246,7 +248,10 @@ class Shot(pygame.sprite.Sprite):
                 self.kill()
         if (not SCREENRECT.contains(self.rect)):
             self.kill()
-
+        if not self.hitting_firer:
+            self.cleared_firer = True
+        self.hitting_firer = False
+        
     def bounce(self, rect):
         if (self.bounces > 0):
             self.bounces -= 1
@@ -260,9 +265,8 @@ class Shot(pygame.sprite.Sprite):
             self.kill()
             
     def frag(self, tank):
-        if ((self.firer == tank) and
-            (time.time() - self.when_fired <= self.immunity_secs)):
-            pass         #stupid python
+        if (self.firer == tank) and not self.cleared_firer:
+            self.hitting_firer = True
         else: 
             Shot.boom_sound.play()
             Explosion(tank)
@@ -272,7 +276,7 @@ class Shot(pygame.sprite.Sprite):
 
             
 class Bomb(pygame.sprite.Sprite):
-    speed = 9
+    speed = 9 * SCALE
     images = []
     def __init__(self, alien):
         pygame.sprite.Sprite.__init__(self, self.containers)
