@@ -47,11 +47,11 @@ class WMManager:
         print "Wiimote " + str(self.id) + " fail: " + str(reason);
         self.running = False;
         break;
-      time.sleep(0.001)
+      # Seems to cause intermittent lag, for no real benefit
+      #time.sleep(0.001)
       if len(data):
         self.parser.parse( data )
 	cycles += 1
-
     return cycles
 
   def disconnect( self ):
