@@ -31,7 +31,7 @@ if not pygame.image.get_extended():
 
 #game constants
 SCALE=1.0
-#SCALE=2.4
+SCALE=2.4
 MAX_SHOTS      = 5      #most player bullets onscreen
 ALIEN_ODDS     = 12000     #chances a new alien appears
 BOMB_ODDS      = 10    #chances a new bomb will drop
@@ -154,7 +154,10 @@ class Player(pygame.sprite.Sprite):
         return self.rect.center
 
     def drawcursor(self, surface):
-        return pygame.draw.aaline(surface, [255,0,0], self.gunpos(), self.cursor)
+        return pygame.draw.circle(
+                   surface, [255,0,0], self.cursor, 5, 0).union(
+               pygame.draw.aaline(
+                   surface, [255,0,0], self.gunpos(), self.cursor))
 
     def turret_vector(self):
         dx = self.cursor[0] - self.rect.centerx;
@@ -518,7 +521,7 @@ def ev_wm_bt(event, id):
             p.hDirection = -1 * magnitude;
         elif (event[0] == 'R'):
             p.hDirection = 1 * magnitude
-        elif (event[0] == 'A'):
+        elif (event[0] == 'A' or event[0] == 'B'):
             p.firing = down;
         elif (event[0] == 'B'):
             pass #todo: mines

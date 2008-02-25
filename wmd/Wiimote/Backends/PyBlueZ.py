@@ -1,7 +1,7 @@
 import time
 from bluetooth import *
 from wmd.Common import *
-import _bluetooth as bluez
+import bluetooth as bluez
 
 # This is what the Wiimote calls itself (Bluetooth Name)
 WIIMOTE_NAME = "Nintendo RVL-CNT-01"
